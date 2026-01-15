@@ -1,3 +1,1352 @@
-<html>
-  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Copilot — Hand Gesture Based UI</title>
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#070A12;
+      --card: rgba(255,255,255,0.06);
+      --card2: rgba(255,255,255,0.08);
+      --stroke: rgba(255,255,255,0.12);
+      --txt: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.60);
+      --muted2: rgba(255,255,255,0.40);
+      --blue:#4DA3FF;
+      --cyan:#2CF6FF;
+      --purple:#B58BFF;
+      --green:#44FFB1;
+      --red:#FF4D6D;
+      --amber:#FFCC66;
+      --shadow: 0 20px 70px rgba(0,0,0,0.55);
+      --radius: 22px;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
+    body{
+      margin:0;
+      font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--txt);
+      background: radial-gradient(1400px 900px at 12% 8%, rgba(77,163,255,0.22), transparent 55%),
+                  radial-gradient(900px 700px at 85% 20%, rgba(181,139,255,0.20), transparent 55%),
+                  radial-gradient(800px 600px at 55% 90%, rgba(44,246,255,0.14), transparent 60%),
+                  linear-gradient(180deg, #040611 0%, #070A12 60%, #050814 100%);
+      overflow-x: hidden;
+    }
+
+    /* Ambient glowing blobs */
+    .blob{
+      position: fixed;
+      filter: blur(50px);
+      opacity: 0.8;
+      z-index: 0;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      animation: float 12s ease-in-out infinite;
+    }
+    .blob.b1{ width: 520px; height: 520px; background: rgba(77,163,255,0.35); left:-140px; top:-140px; }
+    .blob.b2{ width: 480px; height: 480px; background: rgba(181,139,255,0.28); right:-170px; top:40px; animation-delay: 2s; }
+    .blob.b3{ width: 560px; height: 560px; background: rgba(44,246,255,0.22); left:40%; bottom:-240px; animation-delay: 4s; }
+
+    @keyframes float{
+      0%,100%{ transform: translate(0,0) scale(1); }
+      50%{ transform: translate(20px, -20px) scale(1.03); }
+    }
+
+    /* Layout */
+    .app{
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 26px;
+    }
+
+    .shell{
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    /* Glass Cards */
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow: hidden;
+      position: relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: radial-gradient(600px 220px at 20% 0%, rgba(77,163,255,0.15), transparent 60%),
+                  radial-gradient(500px 240px at 90% 10%, rgba(181,139,255,0.12), transparent 65%);
+      pointer-events:none;
+    }
+
+    /* Left panel (brand & login) */
+    .left{
+      padding: 22px;
+      display:flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .brandBar{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+    }
+    .logo{
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background:
+        radial-gradient(12px 12px at 30% 30%, rgba(44,246,255,0.9), transparent 70%),
+        radial-gradient(18px 18px at 75% 70%, rgba(181,139,255,0.85), transparent 75%),
+        radial-gradient(18px 18px at 40% 80%, rgba(77,163,255,0.8), transparent 75%),
+        linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 16px 50px rgba(77,163,255,0.15);
+      position: relative;
+    }
+    .logo::after{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      border-radius: 16px;
+      background: linear-gradient(90deg, rgba(77,163,255,0.35), rgba(181,139,255,0.25), rgba(44,246,255,0.25));
+      filter: blur(14px);
+      opacity: .45;
+      z-index:-1;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing: 0.4px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .brand p{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .statusPill{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .dot{
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 18px rgba(255,204,102,0.55);
+    }
+
+    .hero{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow:hidden;
+      position: relative;
+      min-height: 250px;
+    }
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: radial-gradient(700px 220px at 20% 0%, rgba(44,246,255,0.15), transparent 60%),
+                  radial-gradient(700px 240px at 90% 80%, rgba(181,139,255,0.14), transparent 60%);
+      pointer-events:none;
+    }
+
+    .heroTitle{
+      position: relative;
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .heroTitle h2{
+      margin:0;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: 0.2px;
+    }
+    .heroTitle span{
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 54ch;
+    }
+
+    .featureChips{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: relative;
+    }
+    .chip{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 9px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+    }
+    .chip b{
+      font-weight: 700;
+      color: var(--txt);
+    }
+    .chip .icon{
+      width: 18px;
+      height: 18px;
+      display:grid;
+      place-items:center;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    /* Login Box */
+    .loginBox{
+      display:grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.10);
+      position: relative;
+    }
+
+    .loginHead{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .loginHead h3{
+      margin:0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .loginHead p{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tabs{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .tabBtn{
+      cursor:pointer;
+      user-select:none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      transition: 0.25s ease;
+    }
+    .tabBtn.active{
+      background: linear-gradient(90deg, rgba(77,163,255,0.30), rgba(181,139,255,0.26));
+      border-color: rgba(255,255,255,0.18);
+      color: var(--txt);
+      box-shadow: 0 12px 30px rgba(77,163,255,0.12);
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    input{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 14px;
+      outline: none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+      color: var(--txt);
+      transition: 0.25s ease;
+      font-size: 14px;
+    }
+    input:focus{
+      border-color: rgba(44,246,255,0.35);
+      box-shadow: 0 0 0 4px rgba(44,246,255,0.10);
+    }
+
+    .row{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .mini{
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .mini input[type="checkbox"]{
+      width: 16px;
+      height: 16px;
+      accent-color: var(--cyan);
+    }
+    .link{
+      font-size: 12px;
+      color: rgba(77,163,255,0.95);
+      cursor: pointer;
+      text-decoration: none;
+      opacity: 0.9;
+    }
+    .link:hover{ opacity: 1; text-decoration: underline; }
+
+    .btnRow{
+      display:flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .btn{
+      cursor:pointer;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      color: var(--txt);
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 14px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap: 10px;
+      transition: 0.25s ease;
+      user-select:none;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,0.18);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    }
+
+    .btn.primary{
+      background: linear-gradient(90deg, rgba(77,163,255,0.55), rgba(181,139,255,0.50));
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .btn.danger{
+      background: rgba(255,77,109,0.14);
+      border-color: rgba(255,77,109,0.32);
+    }
+
+    .toast{
+      display:none;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.35);
+      color: var(--txt);
+      font-size: 13px;
+    }
+    .toast.show{ display:block; }
+    .toast.ok{ border-color: rgba(68,255,177,0.35); }
+    .toast.err{ border-color: rgba(255,77,109,0.35); }
+
+    /* Right panel dashboard */
+    .right{
+      padding: 18px;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .topNav{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 12px;
+      padding: 14px 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .topNav .title{
+      display:flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .topNav .title h3{
+      margin:0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .topNav .title span{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .userBox{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .avatar{
+      width: 32px; height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(12px 12px at 35% 25%, rgba(44,246,255,0.95), transparent 70%),
+                  radial-gradient(14px 14px at 70% 75%, rgba(181,139,255,0.95), transparent 75%),
+                  rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .userBox .meta{
+      display:flex; flex-direction:column; gap: 0px;
+    }
+    .userBox .meta b{
+      font-size: 12px;
+    }
+    .userBox .meta small{
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .dash{
+      display:grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 12px;
+      align-items: stretch;
+      flex: 1;
+    }
+
+    .panel{
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.10);
+      position: relative;
+      overflow:hidden;
+    }
+
+    .panelHead{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .panelHead h4{
+      margin:0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .panelHead span{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Camera card */
+    .cameraWrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .camFrame{
+      position: relative;
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      min-height: 240px;
+      display:grid;
+      place-items:center;
+    }
+    video{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display:none;
+      transform: scaleX(-1); /* mirror */
+    }
+    .camHint{
+      text-align:center;
+      padding: 18px;
+      color: var(--muted);
+      max-width: 46ch;
+      font-size: 13px;
+    }
+
+    .hud{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+    }
+    .hud::before{
+      content:"";
+      position:absolute;
+      inset: 14px;
+      border-radius: 18px;
+      border: 1px dashed rgba(44,246,255,0.30);
+      box-shadow: 0 0 0 4px rgba(44,246,255,0.06);
+      opacity: 0.45;
+    }
+    .hudTop{
+      position:absolute;
+      left: 14px;
+      top: 14px;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .recDot{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 22px rgba(255,77,109,0.55);
+      display:none;
+    }
+
+    .badges{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge{
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+    .badge strong{ color: var(--txt); }
+    .glow{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 20px rgba(68,255,177,0.55);
+    }
+
+    /* Output */
+    textarea{
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      padding: 12px 12px;
+      border-radius: 18px;
+      outline:none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+      color: var(--txt);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    textarea:focus{
+      border-color: rgba(181,139,255,0.35);
+      box-shadow: 0 0 0 4px rgba(181,139,255,0.10);
+    }
+
+    /* Side stats */
+    .stack{
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+    }
+
+    .miniCard{
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .kpi{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items:flex-end;
+    }
+    .kpi .num{
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .kpi .label{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .spark{
+      width: 68px;
+      height: 26px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, rgba(44,246,255,0.22), rgba(181,139,255,0.16));
+      border: 1px solid rgba(255,255,255,0.10);
+      position: relative;
+      overflow:hidden;
+    }
+    .spark::before{
+      content:"";
+      position:absolute;
+      inset:-40% -20%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+      transform: rotate(10deg);
+      animation: shine 2.8s ease-in-out infinite;
+    }
+    @keyframes shine{
+      0%{ transform: translateX(-70%) rotate(10deg); opacity: 0.0;}
+      35%{ opacity: 0.55; }
+      100%{ transform: translateX(70%) rotate(10deg); opacity: 0.0;}
+    }
+
+    .history{
+      max-height: 220px;
+      overflow:auto;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 6px;
+    }
+    .history::-webkit-scrollbar{ width: 8px; }
+    .history::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.10);
+      border-radius: 999px;
+    }
+
+    .item{
+      padding: 10px 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      display:flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .item .t{
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .item .msg{
+      font-size: 13px;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .footerHint{
+      font-size: 12px;
+      color: var(--muted2);
+      text-align:center;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    /* Page switching */
+    .hidden{ display:none !important; }
+    .fadeIn{
+      animation: fadeIn 0.35s ease;
+    }
+    @keyframes fadeIn{
+      from{ opacity: 0; transform: translateY(6px); }
+      to{ opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media(max-width: 980px){
+      .shell{ grid-template-columns: 1fr; }
+      .dash{ grid-template-columns: 1fr; }
+      .grid2{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <div class="app">
+
+    <div class="shell">
+      <!-- LEFT -->
+      <section class="card left">
+
+        <div class="brandBar">
+          <div class="brand">
+            <div class="logo"></div>
+            <div>
+              <h1>Smart Copilot</h1>
+              <p>Hand Gesture → Text + Speech Interface</p>
+            </div>
+          </div>
+
+          <div class="statusPill">
+            <span class="dot"></span>
+            <span id="sysStatus">System Idle</span>
+          </div>
+        </div>
+
+        <div class="hero">
+          <div class="heroTitle">
+            <h2>Gesture Based Smart Copilot</h2>
+            <span>
+              A futuristic UI prototype for your end-semester project.
+              Convert recognized gestures into meaningful text output and optional speech.
+            </span>
+          </div>
+
+          <div class="featureChips">
+            <div class="chip"><span class="icon">🎥</span> <b>Live</b> Camera Panel</div>
+            <div class="chip"><span class="icon">🧠</span> <b>Gesture</b> Recognition Output</div>
+            <div class="chip"><span class="icon">🔊</span> <b>TTS</b> Speech Assistant</div>
+            <div class="chip"><span class="icon">🗂️</span> <b>Logs</b> + History</div>
+            <div class="chip"><span class="icon">🛡️</span> <b>Strong</b> Login UX</div>
+          </div>
+        </div>
+
+        <!-- LOGIN -->
+        <div class="loginBox" id="authBox">
+          <div class="loginHead">
+            <div>
+              <h3 id="authTitle">Secure Login</h3>
+              <p id="authSubtitle">Access the Smart Copilot dashboard</p>
+            </div>
+
+            <div class="tabs">
+              <div class="tabBtn active" id="tabLogin">Login</div>
+              <div class="tabBtn" id="tabSignup">Signup</div>
+            </div>
+          </div>
+
+          <div class="grid2" id="nameRow" style="display:none;">
+            <div class="field">
+              <label>Full Name</label>
+              <input id="fullName" type="text" placeholder="Your name"/>
+            </div>
+            <div class="field">
+              <label>Roll No / ID</label>
+              <input id="studentId" type="text" placeholder="e.g. 22BCS123"/>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Email</label>
+              <input id="email" type="email" placeholder="you@example.com"/>
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input id="password" type="password" placeholder="••••••••"/>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="mini">
+              <input id="remember" type="checkbox" checked />
+              <span>Remember this device</span>
+            </div>
+            <a class="link" id="forgotBtn">Forgot password?</a>
+          </div>
+
+          <div class="btnRow">
+            <div class="btn primary" id="authBtn">🔐 Login</div>
+            <div class="btn" id="demoBtn">⚡ Use Demo</div>
+          </div>
+
+          <div class="toast" id="toast"></div>
+        </div>
+
+        <div class="footerHint">
+          Tip: Use <b>Demo</b> for presentation if you don’t want signup.<br/>
+          Works offline once loaded.
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <section class="card right">
+        <div class="topNav">
+          <div class="title">
+            <h3>Dashboard</h3>
+            <span id="dateTime">--</span>
+          </div>
+
+          <div class="userBox">
+            <div class="avatar"></div>
+            <div class="meta">
+              <b id="userName">Guest</b>
+              <small id="userRole">Not logged in</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- DASHBOARD CONTENT -->
+        <div class="dash hidden" id="dashArea">
+
+          <!-- Main panel -->
+          <div class="panel">
+            <div class="panelHead">
+              <h4>Gesture Detection — Live Camera</h4>
+              <span id="camStatus">Camera: OFF</span>
+            </div>
+
+            <div class="cameraWrap">
+              <div class="camFrame">
+                <video id="video" autoplay playsinline muted></video>
+                <div class="camHint" id="camHint">
+                  Click <b>Start Camera</b> to enable webcam view.<br/>
+                  This UI simulates gesture detection output for your project demo.
+                </div>
+                <div class="hud">
+                  <div class="hudTop">
+                    <span class="recDot" id="recDot"></span>
+                    <span id="hudText">Ready for gesture input</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="badges">
+                <div class="badge"><span class="glow"></span> <strong id="gestureName">Gesture:</strong> <span id="gestureVal">—</span></div>
+                <div class="badge">Confidence: <strong id="confVal">0%</strong></div>
+                <div class="badge">Mode: <strong id="modeVal">Text</strong></div>
+              </div>
+
+              <div class="btnRow">
+                <div class="btn primary" id="startCamBtn">🎥 Start Camera</div>
+                <div class="btn danger" id="stopCamBtn">⛔ Stop</div>
+                <div class="btn" id="simulateBtn">🖐️ Simulate Gesture</div>
+              </div>
+
+              <div style="margin-top:6px;">
+                <label style="display:block;margin-bottom:6px;">Output Text</label>
+                <textarea id="output" placeholder="Gesture will convert into text here..."></textarea>
+              </div>
+
+              <div class="btnRow">
+                <div class="btn primary" id="speakBtn">🔊 Speak</div>
+                <div class="btn" id="clearBtn">🧹 Clear</div>
+                <div class="btn" id="saveBtn">💾 Save to History</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Side panel -->
+          <div class="stack">
+            <div class="miniCard">
+              <div class="panelHead" style="margin-bottom:10px;">
+                <h4>System KPIs</h4>
+                <span>Live</span>
+              </div>
+
+              <div class="kpi">
+                <div>
+                  <div class="num" id="kpiGestures">0</div>
+                  <div class="label">Gestures Detected</div>
+                </div>
+                <div class="spark"></div>
+              </div>
+
+              <div style="height:10px"></div>
+
+              <div class="kpi">
+                <div>
+                  <div class="num" id="kpiSpeech">0</div>
+                  <div class="label">Speech Outputs</div>
+                </div>
+                <div class="spark"></div>
+              </div>
+            </div>
+
+            <div class="miniCard" style="flex:1;">
+              <div class="panelHead" style="margin-bottom:10px;">
+                <h4>Activity History</h4>
+                <span id="histCount">0 items</span>
+              </div>
+
+              <div class="history" id="history"></div>
+
+              <div class="btnRow" style="margin-top:10px;">
+                <div class="btn" id="exportBtn">📤 Export</div>
+                <div class="btn danger" id="logoutBtn">🚪 Logout</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Locked state -->
+        <div class="panel" id="lockedPanel">
+          <div class="panelHead">
+            <h4>Access Locked</h4>
+            <span>Login required</span>
+          </div>
+          <div style="color:var(--muted); font-size:13px; line-height:1.5;">
+            This dashboard unlocks after secure login/signup.<br/>
+            Use <b>Demo</b> for your end-sem presentation.
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Utilities
+    // -----------------------------
+    const $ = (id) => document.getElementById(id);
+
+    function nowTime(){
+      const d = new Date();
+      const opt = { weekday:'short', year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' };
+      return d.toLocaleString(undefined, opt);
+    }
+    function toast(msg, type="ok"){
+      const t = $("toast");
+      t.className = "toast show " + (type === "ok" ? "ok" : "err");
+      t.textContent = msg;
+      setTimeout(()=> t.className = "toast", 2400);
+    }
+
+    // -----------------------------
+    // Date/Time ticker
+    // -----------------------------
+    setInterval(()=> $("dateTime").textContent = nowTime(), 700);
+    $("dateTime").textContent = nowTime();
+
+    // -----------------------------
+    // Auth (LocalStorage based)
+    // -----------------------------
+    const LS_USERS = "smartcopilot_users";
+    const LS_SESSION = "smartcopilot_session";
+
+    function getUsers(){
+      try{ return JSON.parse(localStorage.getItem(LS_USERS) || "[]"); }
+      catch{ return []; }
+    }
+    function setUsers(users){
+      localStorage.setItem(LS_USERS, JSON.stringify(users));
+    }
+
+    function setSession(session){
+      localStorage.setItem(LS_SESSION, JSON.stringify(session));
+    }
+    function getSession(){
+      try{ return JSON.parse(localStorage.getItem(LS_SESSION) || "null"); }
+      catch{ return null; }
+    }
+    function clearSession(){
+      localStorage.removeItem(LS_SESSION);
+    }
+
+    let authMode = "login"; // login/signup
+
+    function switchMode(mode){
+      authMode = mode;
+      $("tabLogin").classList.toggle("active", mode==="login");
+      $("tabSignup").classList.toggle("active", mode==="signup");
+
+      $("nameRow").style.display = mode === "signup" ? "grid" : "none";
+
+      $("authTitle").textContent = mode==="login" ? "Secure Login" : "Create Account";
+      $("authSubtitle").textContent = mode==="login" ? "Access the Smart Copilot dashboard" : "Signup once for your project demo";
+      $("authBtn").textContent = mode==="login" ? "🔐 Login" : "📝 Signup";
+    }
+
+    $("tabLogin").addEventListener("click", ()=> switchMode("login"));
+    $("tabSignup").addEventListener("click", ()=> switchMode("signup"));
+
+    // Password strength check (simple)
+    function isStrongPassword(p){
+      // at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol
+      const okLen = p.length >= 8;
+      const up = /[A-Z]/.test(p);
+      const low = /[a-z]/.test(p);
+      const num = /[0-9]/.test(p);
+      const sym = /[^A-Za-z0-9]/.test(p);
+      return okLen && up && low && num && sym;
+    }
+
+    function loginUser(email, password){
+      const users = getUsers();
+      const found = users.find(u => u.email === email);
+      if(!found) return {ok:false, msg:"Account not found. Please signup first."};
+
+      // Demo UI only (not hashed) - For real system use backend hashing.
+      if(found.password !== password) return {ok:false, msg:"Wrong password. Try again."};
+
+      setSession({ email: found.email, name: found.name || "User", id: found.id || "—" });
+      return {ok:true, msg:"Login successful ✅"};
+    }
+
+    function signupUser(name, id, email, password){
+      const users = getUsers();
+      const exists = users.some(u => u.email === email);
+      if(exists) return {ok:false, msg:"Email already registered. Please login."};
+
+      if(!isStrongPassword(password)){
+        return {ok:false, msg:"Password weak. Use 8+ chars with Upper/Lower/Number/Symbol."};
+      }
+
+      users.push({ name, id, email, password, createdAt: new Date().toISOString() });
+      setUsers(users);
+
+      setSession({ email, name: name || "User", id: id || "—" });
+      return {ok:true, msg:"Signup successful ✅"};
+    }
+
+    function unlockDashboard(session){
+      $("dashArea").classList.remove("hidden");
+      $("dashArea").classList.add("fadeIn");
+      $("lockedPanel").classList.add("hidden");
+
+      $("userName").textContent = session?.name || "Guest";
+      $("userRole").textContent = "Smart Copilot User";
+      $("sysStatus").textContent = "Online";
+      document.querySelector(".dot").style.background = "var(--green)";
+      document.querySelector(".dot").style.boxShadow = "0 0 18px rgba(68,255,177,0.55)";
+    }
+
+    function lockDashboard(){
+      $("dashArea").classList.add("hidden");
+      $("lockedPanel").classList.remove("hidden");
+      $("userName").textContent = "Guest";
+      $("userRole").textContent = "Not logged in";
+      $("sysStatus").textContent = "System Idle";
+      document.querySelector(".dot").style.background = "var(--amber)";
+      document.querySelector(".dot").style.boxShadow = "0 0 18px rgba(255,204,102,0.55)";
+    }
+
+    // Forgot password (UI only)
+    $("forgotBtn").addEventListener("click", ()=>{
+      toast("This is a UI demo. In real app, password reset goes to email.", "ok");
+    });
+
+    // Auth button action
+    $("authBtn").addEventListener("click", ()=>{
+      const email = $("email").value.trim();
+      const password = $("password").value;
+
+      if(!email || !password){
+        toast("Please fill email and password.", "err");
+        return;
+      }
+
+      if(authMode === "login"){
+        const res = loginUser(email, password);
+        if(!res.ok){ toast(res.msg, "err"); return; }
+        toast(res.msg, "ok");
+        unlockDashboard(getSession());
+      } else {
+        const name = $("fullName").value.trim();
+        const sid = $("studentId").value.trim();
+        const res = signupUser(name, sid, email, password);
+        if(!res.ok){ toast(res.msg, "err"); return; }
+        toast(res.msg, "ok");
+        unlockDashboard(getSession());
+      }
+    });
+
+    // Demo login
+    $("demoBtn").addEventListener("click", ()=>{
+      const demoSession = { email:"demo@smartcopilot.ai", name:"Demo Student", id:"DEMO-01" };
+      setSession(demoSession);
+      toast("Demo mode enabled ✅", "ok");
+      unlockDashboard(demoSession);
+    });
+
+    // Auto restore session
+    const session = getSession();
+    if(session){
+      unlockDashboard(session);
+    } else {
+      lockDashboard();
+    }
+
+    // Logout
+    $("logoutBtn").addEventListener("click", ()=>{
+      stopCamera();
+      clearSession();
+      toast("Logged out.", "ok");
+      lockDashboard();
+    });
+
+    // -----------------------------
+    // Camera controls
+    // -----------------------------
+    let stream = null;
+    let cameraOn = false;
+
+    async function startCamera(){
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        $("video").srcObject = stream;
+        $("video").style.display = "block";
+        $("camHint").style.display = "none";
+        $("camStatus").textContent = "Camera: ON";
+        $("hudText").textContent = "Analyzing hand gestures…";
+        $("recDot").style.display = "inline-block";
+        cameraOn = true;
+      }catch(err){
+        toast("Camera permission denied or not available.", "err");
+      }
+    }
+
+    function stopCamera(){
+      if(stream){
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      $("video").style.display = "none";
+      $("camHint").style.display = "block";
+      $("camStatus").textContent = "Camera: OFF";
+      $("hudText").textContent = "Ready for gesture input";
+      $("recDot").style.display = "none";
+      cameraOn = false;
+    }
+
+    $("startCamBtn").addEventListener("click", startCamera);
+    $("stopCamBtn").addEventListener("click", stopCamera);
+
+    // -----------------------------
+    // Gesture Simulation (demo working)
+    // You will replace this with your real model output later.
+    // -----------------------------
+    const gestureMap = [
+      { gesture:"Thumbs Up", text:"✅ Confirm / Yes", conf: 92 },
+      { gesture:"Open Palm", text:"🖐️ Stop / Pause", conf: 88 },
+      { gesture:"Peace (V)", text:"✌️ Next / Continue", conf: 90 },
+      { gesture:"Point Right", text:"➡️ Move Forward", conf: 85 },
+      { gesture:"Fist", text:"✊ Activate Command Mode", conf: 89 },
+      { gesture:"OK Sign", text:"👌 Task Completed", conf: 93 }
+    ];
+
+    let detectedCount = 0;
+    let speechCount = 0;
+    let historyList = [];
+
+    function updateKPIs(){
+      $("kpiGestures").textContent = detectedCount;
+      $("kpiSpeech").textContent = speechCount;
+      $("histCount").textContent = `${historyList.length} items`;
+    }
+
+    function setGestureUI(g){
+      $("gestureVal").textContent = g.gesture;
+      $("confVal").textContent = `${g.conf}%`;
+      $("hudText").textContent = `Detected: ${g.gesture} (${g.conf}%)`;
+    }
+
+    function appendOutput(line){
+      const out = $("output");
+      const prefix = out.value.trim().length ? "\n" : "";
+      out.value += prefix + line;
+      out.scrollTop = out.scrollHeight;
+    }
+
+    $("simulateBtn").addEventListener("click", ()=>{
+      const g = gestureMap[Math.floor(Math.random()*gestureMap.length)];
+      detectedCount++;
+      setGestureUI(g);
+      appendOutput(`[${new Date().toLocaleTimeString()}] ${g.text}`);
+      updateKPIs();
+
+      if(!cameraOn){
+        toast("Tip: Start camera for more realistic demo.", "ok");
+      }
+    });
+
+    // -----------------------------
+    // Speech (Text-to-Speech)
+    // -----------------------------
+    function speakText(text){
+      if(!("speechSynthesis" in window)){
+        toast("Speech not supported in this browser.", "err");
+        return;
+      }
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.lang = "en-IN"; // India English
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+
+    $("speakBtn").addEventListener("click", ()=>{
+      const text = $("output").value.trim();
+      if(!text){
+        toast("Output is empty.", "err");
+        return;
+      }
+      speakText(text);
+      speechCount++;
+      updateKPIs();
+      toast("Speaking output 🔊", "ok");
+    });
+
+    // Clear output
+    $("clearBtn").addEventListener("click", ()=>{
+      $("output").value = "";
+      toast("Cleared output.", "ok");
+    });
+
+    // Save to history
+    function addHistory(message){
+      const time = new Date().toLocaleString();
+      historyList.unshift({ time, message });
+      renderHistory();
+      updateKPIs();
+    }
+
+    function renderHistory(){
+      const box = $("history");
+      box.innerHTML = "";
+      historyList.forEach((h, idx)=>{
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="t">
+            <span>${h.time}</span>
+            <span style="color:rgba(77,163,255,0.95); cursor:pointer;" data-i="${idx}">Copy</span>
+          </div>
+          <div class="msg">${escapeHtml(h.message)}</div>
+        `;
+        box.appendChild(div);
+      });
+
+      // copy handlers
+      box.querySelectorAll("[data-i]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const i = +btn.getAttribute("data-i");
+          navigator.clipboard.writeText(historyList[i].message);
+          toast("Copied ✅", "ok");
+        });
+      });
+    }
+
+    function escapeHtml(str){
+      return str
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;");
+    }
+
+    $("saveBtn").addEventListener("click", ()=>{
+      const text = $("output").value.trim();
+      if(!text){
+        toast("Nothing to save.", "err");
+        return;
+      }
+      addHistory(text);
+      toast("Saved to history ✅", "ok");
+    });
+
+    // Export history
+    $("exportBtn").addEventListener("click", ()=>{
+      if(historyList.length === 0){
+        toast("History is empty.", "err");
+        return;
+      }
+      const data = {
+        project: "Hand Gesture Based Smart Copilot",
+        exportedAt: new Date().toISOString(),
+        history: historyList
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "smartcopilot_history.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast("Exported history file ✅", "ok");
+    });
+
+    // Default mode badge
+    $("modeVal").textContent = "Text + Speech";
+
+    // Initial KPIs
+    updateKPIs();
+  </script>
+</body>
 </html>
