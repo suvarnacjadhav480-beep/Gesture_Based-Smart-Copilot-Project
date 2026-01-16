@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖐️ ASL → Speech | Real-time Sign Language</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖐️ ASL → Speech</h1>
+            <p>Real-time American Sign Language Recognition</p>
+        </header>
+
+        <div class="video-container">
+            <video class="input_video" autoplay playsinline></video>
+            <canvas class="output_canvas"></canvas>
+        </div>
+
+        <div class="ui-panel">
+            <div class="status-bar">
+                <span id="currentLetter">-</span>
+                <span id="bufferStatus">0/5</span>
+                <span id="confidence">---</span>
+            </div>
+            <div class="text-display">
+                <div id="signText">Start signing...</div>
+            </div>
+            <div class="controls">
+                <button id="clearBtn">Clear</button>
+                <button id="speakBtn">🔊 Speak</button>
+            </div>
+        </div>
+
+        <div class="sign-guide">
+            <h3>✅ Detected Signs</h3>
+            <div class="sign-list">
+                <span>SPACE (Fist)</span>
+                <span>A (Thumb)</span>
+                <span>B (4 fingers)</span>
+                <span>I (Index)</span>
+                <span>L (Thumb+Index)</span>
+                <span>O (Curled)</span>
+                <span>U/V (2 fingers)</span>
+                <span>Y (Thumb+Pinky)</span>
+                <span>1-5 (Numbers)</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
